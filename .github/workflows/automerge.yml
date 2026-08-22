@@ -1,0 +1,58 @@
+name: Auto-merge
+
+# Automatically approves and enables auto-merge for:
+#   • Dependabot PRs (dependency updates)
+#   • PRs on branches starting with "claude/" (Claude Code sessions)
+#
+# Requirements:
+#   • Branch protection on `main`/`develop` must be enabled (recommended).
+#   • "Allow auto-merge" must be checked in repository Settings → General.
+#   • The GITHUB_TOKEN used here is `github-actions[bot]`, a different identity
+#     from the PR author, so self-approval restrictions do not apply.
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # ─────────────────────────────────────────────────── auto-approve
+  auto-approve:
+    name: Auto-approve eligible PR
+    runs-on: ubuntu-latest
+    if: |
+      github.actor == 'dependabot[bot]' ||
+      startsWith(github.head_ref, 'claude/')
+    steps:
+      - name: Approve PR
+        run: gh pr review "$PR_URL" --approve --body "Auto-approved by github-actions[bot] ✅"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─────────────────────────────────────────────────── auto-merge
+  auto-merge:
+    name: Enable auto-merge for eligible PR
+    runs-on: ubuntu-latest
+    needs: [auto-approve]
+    if: |
+      always() &&
+      needs.auto-approve.result != 'failure' &&
+      (
+        github.actor == 'dependabot[bot]' ||
+        startsWith(github.head_ref, 'claude/')
+      )
+    steps:
+      # Try auto-merge (requires "Allow auto-merge" in repo settings).
+      # Falls back to an immediate squash-merge if auto-merge is disabled.
+      - name: Enable auto-merge (squash)
+        run: |
+          gh pr merge "$PR_URL" --auto --squash 2>/dev/null \
+            || gh pr merge "$PR_URL" --squash \
+            || echo "PR could not be merged automatically — check branch protection rules."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

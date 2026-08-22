@@ -1,0 +1,11 @@
+services:
+  notion-to-odoo:
+    build: .
+    image: notion-to-odoo:latest
+    env_file:
+      - .env
+    # Pass CLI arguments via the ARGS environment variable, e.g.:
+    #   ARGS="page <NOTION_PAGE_ID>" docker compose run notion-to-odoo
+    # Or override the command directly:
+    #   docker compose run notion-to-odoo database <NOTION_DATABASE_ID>
+    command: ${ARGS:-search}

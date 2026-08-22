@@ -1,0 +1,17 @@
+.env
+.git
+.github
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+dist/
+build/
+.pytest_cache
+.coverage
+coverage.xml
+tests/
+requirements-dev.txt
+*.md

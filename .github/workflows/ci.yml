@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Lint & Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint with ruff
+        run: ruff check .
+
+      - name: Run tests with coverage
+        run: |
+          pytest --cov=src --cov-report=xml --cov-report=term-missing -v
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v7
+        if: matrix.python-version == '3.12'
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Build-only: no registry credentials are configured in this repo.
+      # Add a login/push step once they are.
+      #
+      # Note: this repo's Blacksmith Docker-layer-cache sticky disk is in a
+      # broken state (every build fails with "failed to open database file:
+      # .../runc-overlayfs/snapshots/metadata.db: no such file or directory",
+      # even after wiping /var/lib/buildkit and restarting buildkitd), so this
+      # job uses a plain `docker build` for now. Restore
+      # useblacksmith/setup-docker-builder + useblacksmith/build-push-action
+      # once the sticky disk has been reset.
+      - name: Build image
+        run: docker build -t notion-to-odoo:ci .
