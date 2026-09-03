@@ -22,7 +22,7 @@ jobs:
   # ─────────────────────────────────────────────────── auto-approve
   auto-approve:
     name: Auto-approve eligible PR
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: |
       github.actor == 'dependabot[bot]' ||
       startsWith(github.head_ref, 'claude/')
@@ -36,7 +36,7 @@ jobs:
   # ─────────────────────────────────────────────────── auto-merge
   auto-merge:
     name: Enable auto-merge for eligible PR
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [auto-approve]
     if: |
       always() &&
